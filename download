@@ -243,7 +243,12 @@ START_DOWNLOAD()
      echo > $CURRENT_DIR/$FILE_NAME
   fi
 
-curl -sLO $1
+if [[ -f $TMPDIR/checksum.download ]]
+then
+rm $TMPDIR/checksum.download
+fi
+
+curl -sLO $1 | md5sum | awk '{print $1}' > $TMPDIR/checksum.download
 }
 
 echo -e "Downloading in process : [$FILE_NAME]"
@@ -298,6 +303,9 @@ START_DOWNLOAD $URL & \
   else
     (sleep 1) &> /dev/null & spinner
   fi
+
+    ONLINE_CHECKSUM=$(cat $TMPDIR/checksum.download)
+
   CR_SIZE1=$(du -b ${CURRENT_DIR}/${FILE_NAME} | awk '{print $1}')
   PR_SIZE1=$(echo "scale=1; $CR_SIZE1 / 1024 / 1024" | bc)
     SPEED=$((CR_SIZE1 - CR_SIZE))
@@ -309,6 +317,14 @@ START_DOWNLOAD $URL & \
     else
       TEXT="${PR_SIZE1}/\? MiB ${SPEED} KiB/s"
     fi #& (START_DOWNLOAD $URL) &> /dev/null & spinner
+
+    if [[ ${#ONLINE_CHECKSUM} -gt 0 ]] && [[ ! ${CR_SIZE} -le 1 ]] && [[ ${SPEED} == 0 ]]
+    then
+    blank
+    echo -e "${PR_SIZE}/${PR_SIZE1} MiB ${A1}━━━━━━━━━━━━━━━━━━━━━━━━━${R0}"
+    echo -e "Download finished."
+    break
+    fi
 done
 else
   START_DOWNLOAD $URL | PROGRESS
