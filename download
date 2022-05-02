@@ -17,6 +17,14 @@ ARG2=$2
 ARG3=$3
 
 
+if [[ $(uname -o) == *"Android"* ]]
+then
+  PRFIX=$PREFIX
+else
+   PRFIX=/
+   TMPDIR=/tmp
+fi
+
 PROG() {
 printf "$TEXT ${A2}━━━━━━━━━━━━━━━━━━━━━━━━━${R0}   \r"
 sleep 0.03
