@@ -234,9 +234,16 @@ printf "\r"
 
   if [[ ${ARG2} == "-o" ]]
   then
+    if [[ ${#ARG3} -gt 0 ]] && [[ -d ${ARG3} ]]
+    then
     CURRENT_DIR="${ARG3}"
     cd ${CURRENT_DIR}
     touch ${CURRENT_DIR}/${FILE_NAME}
+  else
+     blank
+    echo "Directory not found."
+    exit 1
+    fi
   else
     cd ${CURRENT_DIR}
     touch ${CURRENT_DIR}/${FILE_NAME}
