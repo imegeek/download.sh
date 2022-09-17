@@ -150,6 +150,18 @@ exit_on_signal_SIGTSTP () {
 trap exit_on_signal_SIGINT SIGINT
 trap exit_on_signal_SIGTSTP SIGTSTP
 
+estimate_time()
+{
+    if [[ $2 -gt 0 ]]
+    then
+       result=$(($1 / ($2/8)))
+       result=$((result-8))
+       result=$(date -d@${result} -u +%H:%M:%S)
+    else
+       result="00:00:00              "
+    fi
+}
+
 rand()
 {
 cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-} | head -n 1
@@ -183,7 +195,7 @@ function ProgressBar {
  
 R0=$'\e[0m'
 
-sleep 1 | printf "\r$PR_SIZE/$FILE_SIZE MiB ${SP}: ${_fill// /${C0}━${R0}}${_empty// /━} : [${_progress}/100%%] "
+sleep 1 | printf "\r$PR_SIZE/$FILE_SIZE MiB ${SP}: ${_fill// /${C0}━${R0}}${_empty// /━} : [${_progress}/100%%] eta \e[92m${result}\e[0m"
 }
 
 printf "\r[Retrieving information ...]"
@@ -205,6 +217,7 @@ fi
 START_SIZE=1
 END_SIZE=$(wget --spider $URL 2>&1 | grep Length | awk '{print $2}')
 FILE_SIZE=$(echo "scale=1; $END_SIZE / 1024 / 1024" | bc)
+F_SIZE=$((END_SIZE/1024/1024))
 
 GETFILENAME()
 {
@@ -273,9 +286,11 @@ PROGRESS()
 while [[ $START_SIZE -le 100 ]]
 do
     CR_SIZE=$(du -b ${CURRENT_DIR}/${FILE_NAME} | awk '{print $1}')
+    CURRENT_SIZE=$CR_SIZE
     ProgressBar ${START_SIZE} 100
     CR_SIZE1=$(du -b ${CURRENT_DIR}/${FILE_NAME} | awk '{print $1}')
     SPEED=$((CR_SIZE1 - CR_SIZE))
+    CURRENT_SPEED=$SPEED
     SPEED=$((SPEED /1024))
     if [[ $SPEED -gt "1024" ]]
     then
@@ -284,12 +299,16 @@ do
     else
       SP="${SPEED} KiB/s "
     fi
+    C_SIZE=$(($CR_SIZE/1024/1024))
     PR_SIZE=$(echo "scale=1; $CR_SIZE / 1024 / 1024" | bc)
     START_SIZE=$((100*CR_SIZE/END_SIZE))
-#    if [[ $END_SIZE == 99 ]]
+
+#    if [[ $START_SIZE == 99 ]]
 #    then
-#      SP=""
+#      CURRENT_SPEED_LAST=${CURRENT_SPEED}
 #    fi
+
+    estimate_time ${END_SIZE} ${CURRENT_SPEED}
 
     if [[ $END_SIZE == $CR_SIZE ]]
     then
